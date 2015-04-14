@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <cstdlib>
-#include <stdio.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,20 +17,13 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <fstream>
+#include<iostream>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
 typedef int trans_t;
-
-typedef struct log_t
-{
-	trans_t TransactionId;
-	char* SegName;
-	int Offset;
-	int Size;
-        char* Data;
-
-}log;
 
 typedef struct region_t{
 	void* SegBase;
