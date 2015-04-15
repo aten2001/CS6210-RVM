@@ -282,28 +282,40 @@ void updateIsUnderTransaction(transaction* transPtr, rvm_t rvm)
 
 void rvm_abort_trans(trans_t tid)
 {
-        int flag = 0;
+        int iterator,numsegs,flag = 0;
         rvm_t rvm = transIdToRvmMap[tid];
 	transIdToRvmMap.erase(tid);
 	for(list<transaction*>::iterator transactionListItr = rvm->Transaction_List.begin(); transactionListItr!=rvm->Transaction_List.end();transactionListItr++)
-        {
-                if((*transactionListItr)->TransactionId==tid)
-                {
-			//for(list<region*>::iterator regionsListItr = (*transactionListItr)->regionsList.begin(); regionsListItr!=(*transactionListItr)->regionsList.end();regionsListItr++)
-			for(list<region*>::reverse_iterator regionsListItr = (*transactionListItr)->Region_List.rbegin(); regionsListItr!=(*transactionListItr)->Region_List.rend();++regionsListItr)
-			{
-				memcpy((char*)((*regionsListItr)->SegBase)+(*regionsListItr)->Offset, (*regionsListItr)->Undo, (*regionsListItr)->Size);
-				free((*regionsListItr)->Undo);
-				delete (*regionsListItr);
+	{
+			if((*transactionListItr)->TransactionId==tid)
+		        {
+				numsegs =  (*transactionListItr)->No_Segments;
+				break;
 			}
-			(*transactionListItr)->Region_List.clear();
-			updateIsUnderTransaction(*transactionListItr, rvm);
-            		flag =1;
-			delete (*transactionListItr);
-			rvm->Transaction_List.erase(transactionListItr);
-            		break;
-		}
+	}
 
+	for(iterator=0; iterator<numsegs;iterator++)
+	{
+		for(list<transaction*>::iterator transactionListItr = rvm->Transaction_List.begin(); transactionListItr!=rvm->Transaction_List.end();transactionListItr++)
+		{
+		        if((*transactionListItr)->TransactionId==tid)
+		        {
+				//for(list<region*>::iterator regionsListItr = (*transactionListItr)->regionsList.begin(); regionsListItr!=(*transactionListItr)->regionsList.end();regionsListItr++)
+				for(list<region*>::reverse_iterator regionsListItr = (*transactionListItr)->Region_List.rbegin(); regionsListItr!=(*transactionListItr)->Region_List.rend();++regionsListItr)
+				{
+					memcpy((char*)((*regionsListItr)->SegBase)+(*regionsListItr)->Offset, (*regionsListItr)->Undo, (*regionsListItr)->Size);
+					free((*regionsListItr)->Undo);
+					delete (*regionsListItr);
+				}
+				(*transactionListItr)->Region_List.clear();
+				updateIsUnderTransaction(*transactionListItr, rvm);
+		    		flag =1;
+				delete (*transactionListItr);
+				rvm->Transaction_List.erase(transactionListItr);
+		    		break;
+			}
+
+		}
 	}
         if(flag==0)
         {
@@ -316,36 +328,48 @@ void rvm_abort_trans(trans_t tid)
 
 void rvm_commit_trans(trans_t tid)
 {
-	int flag = 0;
+	int iterator,numsegs,flag = 0;
 	rvm_t rvm = transIdToRvmMap[tid];
 	transIdToRvmMap.erase(tid);
-        for(list<transaction*>::iterator transactionListItr = rvm->Transaction_List.begin(); transactionListItr!=rvm->Transaction_List.end();transactionListItr++)
-        {
-                if((*transactionListItr)->TransactionId==tid)
-                {
-                        ofstream redoLogFd;
-                        redoLogFd.open (redoLogFile,ios::out|ios::in|ios::app);
-                        redoLogFd << transBeginMarker << tid << "\n";
-                        for(list<region*>::iterator regionsListItr = (*transactionListItr)->Region_List.begin(); regionsListItr!=(*transactionListItr)->Region_List.end();regionsListItr++)
-                        {
-                                char * data = (char*)malloc((*regionsListItr)->Size +1); 
-                                memcpy(data,((char*)((*regionsListItr)->SegBase))+((*regionsListItr)->Offset),(*regionsListItr)->Size);
-                                data[(*regionsListItr)->Size]='\0'; 
-                        	flushRedoRecords(redoLogFd,tid,segBaseToSegNameMap[(*regionsListItr)->SegBase],(*regionsListItr)->Offset,(*regionsListItr)->Size,data);
-                                free(data); 
-				free((*regionsListItr)->Undo);
-				delete (*regionsListItr);
-                        }
-                        redoLogFd << transEndMarker << "\n";
-                        redoLogFd.close();	
-			(*transactionListItr)->Region_List.clear();
-			updateIsUnderTransaction(*transactionListItr, rvm);
-            		flag =1;
-			delete (*transactionListItr);
-			rvm->Transaction_List.erase(transactionListItr);
-			break;
-                }
-        }
+	for(list<transaction*>::iterator transactionListItr = rvm->Transaction_List.begin(); transactionListItr!=rvm->Transaction_List.end();transactionListItr++)
+	{
+			if((*transactionListItr)->TransactionId==tid)
+		        {
+				numsegs =  (*transactionListItr)->No_Segments;
+				break;
+			}
+	}
+
+	for(iterator=0; iterator<numsegs;iterator++)
+	{
+		for(list<transaction*>::iterator transactionListItr = rvm->Transaction_List.begin(); transactionListItr!=rvm->Transaction_List.end();transactionListItr++)
+		{
+		        if((*transactionListItr)->TransactionId==tid)
+		        {
+		                ofstream redoLogFd;
+		                redoLogFd.open (redoLogFile,ios::out|ios::in|ios::app);
+		                redoLogFd << transBeginMarker << tid << "\n";
+		                for(list<region*>::iterator regionsListItr = (*transactionListItr)->Region_List.begin(); regionsListItr!=(*transactionListItr)->Region_List.end();regionsListItr++)
+		                {
+		                        char * data = (char*)malloc((*regionsListItr)->Size +1); 
+		                        memcpy(data,((char*)((*regionsListItr)->SegBase))+((*regionsListItr)->Offset),(*regionsListItr)->Size);
+		                        data[(*regionsListItr)->Size]='\0'; 
+		                	flushRedoRecords(redoLogFd,tid,segBaseToSegNameM ap[(*regionsListItr)->SegBase],(*regionsListItr)->Offset,(*regionsListItr)->Size,data);
+		                        free(data); 
+					free((*regionsListItr)->Undo);
+					delete (*regionsListItr);
+		                }
+		                redoLogFd << transEndMarker << "\n";
+		                redoLogFd.close();	
+				(*transactionListItr)->Region_List.clear();
+				updateIsUnderTransaction(*transactionListItr, rvm);
+		    		flag =1;
+				delete (*transactionListItr);
+				rvm->Transaction_List.erase(transactionListItr);
+				break;
+		        }
+		}
+	}
 	if(!flag)
 	{
 		printf("Wrong tid passed to commit.\n");
