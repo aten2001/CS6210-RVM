@@ -29,7 +29,7 @@ void proc1()
      rvm_about_to_modify(trans, segs[0], OFFSET2, 100);
      sprintf(segs[0]+OFFSET2, TEST_STRING);
      rvm_commit_trans(trans);
-	rvm_truncate_log(rvm);
+
      abort();
 }
 
@@ -43,7 +43,6 @@ void proc2()
      rvm = rvm_init("rvm_segments");
 
      segs[0] = (char *) rvm_map(rvm, "testseg", 10000);
-     printf("Seg[0] is %s\n", segs[0]);
      if(strcmp(segs[0], TEST_STRING)) {
 	  printf("ERROR: first hello not present\n");
 	  exit(2);

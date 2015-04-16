@@ -60,7 +60,7 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
       	FILE* fd;
 	int result;
       	void* SegBase=NULL;
-
+	rvm_truncate_log(rvm);
 	if(rvm == (rvm_t)-1 || rvm == (rvm_t)NULL || segname == NULL || size_to_create < 0)
 	{
 		cout<<"ERROR: With Parameters passed.\n";
@@ -406,7 +406,6 @@ void updateExternalDataSegment(string currentSegName, int currentOffset, int cur
          }
          if((currFileSize < (currentOffset + currentData.size())))
          {
-		cout<<"Updating External Data Segment.\n";
          	if (lseek (fd, currentOffset + currentData.size() -1, SEEK_SET) == -1)
          		printf ("lseek error");
          	/* write a dummy byte at the last location */
