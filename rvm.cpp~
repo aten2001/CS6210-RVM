@@ -43,7 +43,7 @@ rvm_t rvm_init(const char *directory)
         	printf("ERROR: Can't allocate memory for RVM.\n");
                 exit(1);
         }
-        rvm->Directory = (char*)malloc(strlen(directory)+1);					//set up RVM		
+        rvm->Directory = (char*)malloc(strlen(directory)*sizeof(char));					//set up RVM		
 	if(rvm->Directory == NULL)
         {
         	printf("ERROR: Can't allocate memory for RVM Directory\n");
@@ -240,7 +240,7 @@ void rvm_about_to_modify(trans_t tid, void *segbase, int offset, int size)
 				newRegion->SegBase = segbase;
 				newRegion->Offset = offset;
 				newRegion->Size = size;
-				newRegion->Undo = (char *)malloc(size+1);
+				newRegion->Undo = (char *)malloc(size*sizeof(char));
 				memcpy(newRegion->Undo, (char*)segbase+offset, size);
 				newRegion->Undo[size] = '\0';
 				(*transactionListItr)->Region_List.push_back(newRegion);
@@ -354,7 +354,7 @@ void rvm_commit_trans(trans_t tid)
 		                        char * data = (char*)malloc((*regionsListItr)->Size +1); 
 		                        memcpy(data,((char*)((*regionsListItr)->SegBase))+((*regionsListItr)->Offset),(*regionsListItr)->Size);
 		                        data[(*regionsListItr)->Size]='\0'; 
-		                	flushRedoRecords(redoLogFd,tid,segBaseToSegNameM ap[(*regionsListItr)->SegBase],(*regionsListItr)->Offset,(*regionsListItr)->Size,data);
+		                	flushRedoRecords(redoLogFd,tid,segBaseToSegNameMap[(*regionsListItr)->SegBase],(*regionsListItr)->Offset,(*regionsListItr)->Size,data);
 		                        free(data); 
 					free((*regionsListItr)->Undo);
 					delete (*regionsListItr);
@@ -406,6 +406,7 @@ void updateExternalDataSegment(string currentSegName, int currentOffset, int cur
          }
          if((currFileSize < (currentOffset + currentData.size())))
          {
+		cout<<"Updating External Data Segment.\n"
          	if (lseek (fd, currentOffset + currentData.size() -1, SEEK_SET) == -1)
          		printf ("lseek error");
          	/* write a dummy byte at the last location */

@@ -26,12 +26,10 @@ void proc1()
      
      rvm_about_to_modify(trans, segs[0], 0, 100);
      sprintf(segs[0], TEST_STRING);
-          cout<<"Segs[0] in proc1:"<<segs[0];
      rvm_about_to_modify(trans, segs[0], OFFSET2, 100);
      sprintf(segs[0]+OFFSET2, TEST_STRING);
-               cout<<"Segs[0] in proc1:"<<segs[0];
      rvm_commit_trans(trans);
-
+	rvm_truncate_log(rvm);
      abort();
 }
 
