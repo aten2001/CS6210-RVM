@@ -33,20 +33,20 @@ rvm_t rvm_init(const char *directory)
         {
             if(errno != EEXIST)
             {
-            	printf("ERROR: Unable to create a directory.\n");
+            	cout << "ERROR: Unable to create a directory.\n";
                 exit(1);
             }            
         }
         rvm_t rvm = new rvm_type;
         if(rvm == NULL)
         {
-        	printf("ERROR: Can't allocate memory for RVM.\n");
+        	cout << "ERROR: Can't allocate memory for RVM.\n";
                 exit(1);
         }
         rvm->Directory = (char*)malloc(strlen(directory)*sizeof(char));					//set up RVM		
 	if(rvm->Directory == NULL)
         {
-        	printf("ERROR: Can't allocate memory for RVM Directory\n");
+        	cout << "ERROR: Can't allocate memory for RVM Directory\n";
                 exit(1);
         }
         rvm->Working_Transaction = 1;
@@ -63,7 +63,7 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
 	rvm_truncate_log(rvm);
 	if(rvm == (rvm_t)-1 || rvm == (rvm_t)NULL || segname == NULL || size_to_create < 0)
 	{
-		cout<<"ERROR: With Parameters passed.\n";
+		cout << "ERROR: With Parameters passed.\n";
 		exit(1);
 	}
 
@@ -71,7 +71,7 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
        	{
                 if((*segmentListItr)->SegName==segname)
                 {
-                  	printf("ERROR: Segment Already Mapped. Attempt to map the same segment detected.\n"); 
+                  	cout << "ERROR: Segment Already Mapped. Attempt to map the same segment detected.\n"; 
                   	exit(1);
                 }
          }
@@ -81,7 +81,7 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
       	fd = fopen(filePath,"ab+"); 
       	if (fd == NULL) 
       	{
-      		printf("ERROR: Unable to open file to read %d  %s \n",errno,filePath);
+      		cout << "ERROR: Unable to open file to read %d  %s \n",errno,filePath;
       		exit(1);
       	}
       	fseek(fd,0,SEEK_END); 
@@ -101,7 +101,7 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
 		if(result==-1)
 		{
 			fclose(fd);
-			cout<<"ERROR: Increaasing FIle Size.\n";
+			cout << "ERROR: Increaasing FIle Size.\n";
 			exit(1);
 		}
 	}
@@ -110,7 +110,7 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
      	SegBase = (char*)malloc(size_to_create);
 	if(SegBase == NULL)
 	{
-		printf("Failure in allocation of memory for segBase in rvm_map.\n");
+		cout << "ERROR: Failure in allocation of memory for SegBase in rvm_map.\n";
 		exit(1);
 	}
      	if(fsize!=0)
@@ -121,15 +121,15 @@ void* rvm_map(rvm_t rvm, const char *segname, int size_to_create)
       	free(filePath);
       	segBaseToSegNameMap[SegBase]=segname;
 	segment* newSegment = (segment*)malloc(sizeof(segment));
-        if(NULL == newSegment)
+        if(newSegment ==NULL)
         {
-        	printf("Memory allocation failed at __createNewSegmentNode__\n");
-                exit(0);
+        	cout << "ERROR: Memory allocation failed at __createNewSegmentNode__\n";
+                exit(1);
         }
         newSegment->SegName = segname;
         newSegment->SegBase = SegBase;
         newSegment->SegSize = size_to_create;
-        newSegment->isUnderTransaction = 0;
+        newSegment->locked = 0;
         newSegment->TransactionId = 0;
 
       	rvm->Segment_Map.push_back(newSegment);
@@ -143,7 +143,7 @@ void rvm_destroy(rvm_t rvm, const char *segname)
        	{
                 if((*segmentListItr)->SegName==segname)
                 {
-                  	printf("ERROR: Segment is Already Mapped. Unmap the Segment first.\n"); 
+                  	cout << "ERROR: Segment is Already Mapped. Unmap the Segment first.\n"; 
                   	exit(1);
                 }
         }	
@@ -184,15 +184,15 @@ trans_t rvm_begin_trans(rvm_t rvm, int numsegs, void **segbases)
 		{
 			if((*segmentListItr)->SegBase==segbases[iterator])
 			{
-				if((*segmentListItr)->isUnderTransaction)
+				if((*segmentListItr)->locked)
 				{
-					//printf("One of the segments is already under transaction.\n");
+					cout << "ERROR: One of the segments is already under transaction.\n";
 					return (trans_t)-1;
 				}
 				else
 				{
 					foundSegCount++;
-					(*segmentListItr)->isUnderTransaction = 1;
+					(*segmentListItr)->locked = 1;
 					break;
 				}
 			}
@@ -200,7 +200,7 @@ trans_t rvm_begin_trans(rvm_t rvm, int numsegs, void **segbases)
 	}
 	if(foundSegCount!=numsegs)
 	{
-		printf("The actual count of segbases doesn't match the numsegs value.\n");
+		cout << "ERROR: The actual count of SegBases doesn't match the numsegs value.\n";
 		exit(1);
 	}
 	transaction* newTransaction = new transaction;
@@ -217,7 +217,7 @@ void rvm_about_to_modify(trans_t tid, void *segbase, int offset, int size)
 	int iterator,numsegs;
 	if (segBaseToSegNameMap.find(segbase) == segBaseToSegNameMap.end())
 	{
-		printf("Wrong segbase passed.\n");
+		cout << "ERROR: Wrong SegBase passed.\n";
 		exit(1);
 	}
         rvm_t rvm = transIdToRvmMap[tid];
@@ -248,20 +248,11 @@ void rvm_about_to_modify(trans_t tid, void *segbase, int offset, int size)
 			}
 			else
 			{
-				printf("Wrong transaction Id.\n");
+				cout << "Wrong Transaction Id.\n";
+				exit(1);
 			}
 		}
 	}
-}
-
-void flushRedoRecords(ofstream& redoLogFd ,int tid,const char* segName,int offset,int size,char * data)
-{
-redoLogFd << regStartMarker << "\n";
-redoLogFd << segNameMarker <<"\n" <<segName << "\n";
-redoLogFd <<offSetMarker<< "\n" <<offset<< "\n";
-redoLogFd <<sizeMarker << "\n" << size<< "\n";
-redoLogFd <<dataMarker << "\n" <<data<< "\n";
-redoLogFd << regEndMarker << "\n";
 }
 
 void updateIsUnderTransaction(transaction* transPtr, rvm_t rvm)
@@ -273,7 +264,7 @@ void updateIsUnderTransaction(transaction* transPtr, rvm_t rvm)
                 {
                         if((*segmentListItr)->SegBase==transPtr->SegBases[iterator])
                         {
-                              (*segmentListItr)->isUnderTransaction = 0;
+                              (*segmentListItr)->locked = 0;
                               break;    
                         }
                 }
@@ -319,7 +310,7 @@ void rvm_abort_trans(trans_t tid)
 	}
         if(flag==0)
         {
-                printf("Wrong Transaction Id");
+                cout << "ERROR: Wrong Transaction Id\n";
 		exit(1);
         }
 }
@@ -354,7 +345,12 @@ void rvm_commit_trans(trans_t tid)
 		                        char * data = (char*)malloc((*regionsListItr)->Size +1); 
 		                        memcpy(data,((char*)((*regionsListItr)->SegBase))+((*regionsListItr)->Offset),(*regionsListItr)->Size);
 		                        data[(*regionsListItr)->Size]='\0'; 
-		                	flushRedoRecords(redoLogFd,tid,segBaseToSegNameMap[(*regionsListItr)->SegBase],(*regionsListItr)->Offset,(*regionsListItr)->Size,data);
+					redoLogFd << regStartMarker << "\n";
+					redoLogFd << segNameMarker <<"\n" <<segBaseToSegNameMap[(*regionsListItr)->SegBase] << "\n";
+					redoLogFd <<offSetMarker<< "\n" <<(*regionsListItr)->Offset<< "\n";
+					redoLogFd <<sizeMarker << "\n" << (*regionsListItr)->Size<< "\n";
+					redoLogFd <<dataMarker << "\n" <<data<< "\n";
+					redoLogFd << regEndMarker << "\n";
 		                        free(data); 
 					free((*regionsListItr)->Undo);
 					delete (*regionsListItr);
@@ -372,7 +368,7 @@ void rvm_commit_trans(trans_t tid)
 	}
 	if(!flag)
 	{
-		printf("Wrong tid passed to commit.\n");
+		cout << "Wrong tid passed to commit.\n";
 		exit(1);
 	}
 }
@@ -382,7 +378,7 @@ int getFileSize( char * fileName)
 	fd = fopen(fileName,"ab+");
 	if (fd == NULL)
         {
-                printf("Error opening file for reading %d  %s \n",errno,fileName);
+                cout << "Error opening file for reading %d  %s \n",errno,fileName;
                 exit(1);
         }
 	fseek(fd,0,SEEK_END);
@@ -401,17 +397,16 @@ void updateExternalDataSegment(string currentSegName, int currentOffset, int cur
         fd = open((char*)currentSegName.c_str(),O_RDWR,S_IRWXU|S_IRWXG|S_IRWXO);
          if (fd == -1)
          {
-           printf("Error opening file for reading\n");
+           cout << "Error opening file for reading\n";
            exit(0);
          }
          if((currFileSize < (currentOffset + currentData.size())))
          {
-		cout<<"Updating External Data Segment.\n";
          	if (lseek (fd, currentOffset + currentData.size() -1, SEEK_SET) == -1)
-         		printf ("lseek error");
+         		cout << "lseek error";
          	/* write a dummy byte at the last location */
          	if (write (fd,"", 1) != 1)
-         		printf ("write error");
+         		cout << "write error";
          }
 
         segBase = mmap(0,size_to_create , PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);

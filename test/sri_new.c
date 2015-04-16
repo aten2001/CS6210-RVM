@@ -1,14 +1,14 @@
-/* basic.c - test that basic persistency works */
+/* new.c - test that basic persistency works */
 
-#include "rvm.h"
+#include "../rvm.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
 
-#define TEST_STRING "hello, world"
-#define OFFSET2 1000
+#define TEST_STRING "hello"
+#define OFFSET2 5
 
 
 /* proc1 writes some data, commits it, then exits */
@@ -21,13 +21,16 @@ void proc1()
      rvm = rvm_init("rvm_segments");
      rvm_destroy(rvm, "testseg");
      segs[0] = (char *) rvm_map(rvm, "testseg", 10000);
+
      
      trans = rvm_begin_trans(rvm, 1, (void **) segs);
      
-     rvm_about_to_modify(trans, segs[0], 0, 100);
+     rvm_about_to_modify(trans, segs[0], 0, 10);
      sprintf(segs[0], TEST_STRING);
-     rvm_about_to_modify(trans, segs[0], OFFSET2, 100);
+     
+ //    rvm_about_to_modify(trans, segs[0], 5, 5);
      sprintf(segs[0]+OFFSET2, TEST_STRING);
+     
      rvm_commit_trans(trans);
 
      abort();
@@ -43,7 +46,7 @@ void proc2()
      rvm = rvm_init("rvm_segments");
 
      segs[0] = (char *) rvm_map(rvm, "testseg", 10000);
-     if(strcmp(segs[0], TEST_STRING)) {
+     if(strcmp(segs[0], "hellohello")) {
 	  printf("ERROR: first hello not present\n");
 	  exit(2);
      }
