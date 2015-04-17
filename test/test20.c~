@@ -1,6 +1,6 @@
 /* test20.c - to test 20 segments and data at different offset at each segment */
 
-#include "../rvm.h"
+#include "rvm.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
